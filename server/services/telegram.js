@@ -59,10 +59,12 @@ function init(token, _botService) {
 
   try {
     if (isProduction && webhookUrl) {
-      bot = new TelegramBot(token, { webHook: { port: process.env.PORT || 3000 } });
+      // webHook: false — не поднимаем свой сервер, используем Express
+      bot = new TelegramBot(token, { webHook: false });
       const hookPath = `/tg-webhook/${token}`;
-      bot.setWebHook(`${webhookUrl}${hookPath}`);
-      logger.info(`[TG] Webhook установлен: ${webhookUrl}${hookPath}`);
+      bot.setWebHook(`${webhookUrl}${hookPath}`)
+        .then(() => logger.info(`[TG] Webhook зарегистрирован: ${webhookUrl}${hookPath}`))
+        .catch(err => logger.error(`[TG] Ошибка setWebHook: ${err.message}`));
     } else {
       bot = new TelegramBot(token, { polling: true });
       logger.info('[TG] Бот запущен в режиме polling');
