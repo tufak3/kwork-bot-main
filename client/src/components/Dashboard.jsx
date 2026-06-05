@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { fetchOrders, fetchTabCounts, getStatus, clearRespondedOrders, getUserMode } from '../api';
+import { fetchOrders, fetchTabCounts, getStatus, clearRespondedOrders, hideAllOrders, getUserMode } from '../api';
 import { useSocket } from '../hooks/useSocket';
 import OrderCard from './OrderCard';
 import BotControls from './BotControls';
@@ -7,12 +7,6 @@ import SettingsModal from './SettingsModal';
 import HistoryModal from './HistoryModal';
 import AnalyticsModal from './AnalyticsModal';
 import Toast from './Toast';
-
-const SORT_OPTIONS = {
-  relevance: 'По релевантности',
-  newest: 'Сначала новые',
-  budget: 'По бюджету',
-};
 
 const TABS = [
   { id: 'inbox', label: 'Входящие' },
@@ -68,13 +62,23 @@ export default function Dashboard() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab]);
 
+  // Poll status every 5s always — catches Telegram-triggered runs
+  // and recovers from missed socket events after Render sleep/wake
   useEffect(() => {
-    if (botStatus !== 'running') return;
     const interval = setInterval(() => {
-      getStatus().then((data) => setStats(data.stats)).catch(() => {});
+      getStatus().then((data) => {
+        setBotStatus(prev => {
+          if (prev === 'running' && data.status === 'stopped') reloadOrders(tab);
+          return data.status;
+        });
+        setStats(data.stats);
+        setAutoInfo({ autoMode: data.autoMode, autoIntervalMinutes: data.autoIntervalMinutes });
+        setUserMode(data.userMode || 'not_working');
+      }).catch(() => {});
     }, 5000);
     return () => clearInterval(interval);
-  }, [botStatus]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tab]);
 
   const handleNewOrder = useCallback((order) => {
     setCounts(prev => ({ ...prev, inbox: prev.inbox + 1, total: prev.total + 1 }));
@@ -135,6 +139,17 @@ export default function Dashboard() {
       pushToast('Отклики очищены', 'info');
     } catch (e) {
       pushToast(e.message || 'Не удалось очистить', 'error');
+    }
+  };
+
+  const handleHideAll = async () => {
+    try {
+      await hideAllOrders(tab);
+      setOrders([]);
+      fetchTabCounts().then(setCounts).catch(() => {});
+      pushToast('Все заказы скрыты', 'info');
+    } catch (e) {
+      pushToast(e.message || 'Не удалось скрыть', 'error');
     }
   };
 
@@ -234,22 +249,15 @@ export default function Dashboard() {
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />
-        {tab !== 'responded' && (
-          <select className="filter-select" value={sort} onChange={(e) => setSort(e.target.value)}>
-            {Object.entries(SORT_OPTIONS).map(([v, l]) => (
-              <option key={v} value={v}>{l}</option>
-            ))}
-          </select>
-        )}
-        <select className="filter-select" value={minRelevance} onChange={(e) => setMinRelevance(Number(e.target.value))}>
-          <option value="0">Все</option>
-          <option value="25">Релевантность ≥ средняя</option>
-          <option value="50">Релевантность ≥ высокая</option>
-        </select>
         <label className="filter-toggle">
           <input type="checkbox" checked={showFavOnly} onChange={(e) => setShowFavOnly(e.target.checked)} />
           ★ Избранное
         </label>
+        {tab !== 'hidden' && orders.length > 0 && (
+          <button className="btn btn-hide-all" onClick={handleHideAll} title="Скрыть все заказы на этой вкладке">
+            🙈 Скрыть все
+          </button>
+        )}
         {tab === 'responded' && orders.length > 0 && (
           <button className="btn btn-clear-responded" onClick={handleClearResponded} title="Очистить все отклики">
             🗑 Очистить отклики
