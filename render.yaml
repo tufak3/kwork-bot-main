@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: kwork-monitor
+    env: node
+    region: frankfurt
+    plan: free
+    buildCommand: npm run render-build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_API_KEYS
+        sync: false
+      - key: CLAUDE_API_KEY
+        sync: false
+      - key: TELEGRAM_BOT_TOKEN
+        sync: false
+      - key: RENDER_EXTERNAL_URL
+        fromService:
+          type: web
+          name: kwork-monitor
+          property: host
+    disk:
+      name: data
+      mountPath: /opt/render/project/src/server
+      sizeGB: 1

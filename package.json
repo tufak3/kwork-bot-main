@@ -1,0 +1,24 @@
+{
+  "name": "kwork-site-ai",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "start": "node server/index.js",
+    "dev": "node server/index.js",
+    "build": "cd client && npm install --include=dev && npm run build",
+    "install-all": "npm install && cd client && npm install",
+    "render-build": "npm install && npm run build"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.101.0",
+    "axios": "^1.7.0",
+    "better-sqlite3": "^12.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.4.2",
+    "express": "^4.21.0",
+    "groq-sdk": "^0.5.0",
+    "node-telegram-bot-api": "^0.66.0",
+    "socket.io": "^4.7.0",
+    "winston": "^3.11.0"
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node -c server/db.js)",
+      "Bash(node -c server/services/ai.js)",
+      "Bash(node -c server/services/bot.js)",
+      "Bash(node -c server/routes/bot.js)",
+      "Bash(node -c server/routes/orders.js)",
+      "Bash(node -e \"const db = require\\('./server/db'\\); db.seedDefaults\\(''\\); const s = db.getAllSettings\\(\\); console.log\\('model:', s.ai_model\\); console.log\\('auto_mode:', s.auto_mode\\); console.log\\('interval:', s.auto_interval_minutes\\); console.log\\('has prompt:', !!s.ai_prompt\\); db.saveOrder\\({id:'test123',title:'Test',description:'desc',budget:'100',url:'',dateCreate:'',query:'q',relevance:42}\\); db.saveAiResponse\\('test123','test response','openai/gpt-oss-120b'\\); const orders = db.getOrders\\(\\); const t = orders.find\\(o=>o.id==='test123'\\); console.log\\('order saved with ai:', !!t, 'rel:', t?.relevance, 'ai len:', t?.ai_response?.length\\); console.log\\('stats:', JSON.stringify\\(db.getStats\\(\\)\\)\\); db.clearOrders\\(\\);\")",
+      "Bash(node -c server/routes/settings.js)",
+      "Bash(node -c server/services/parser.js)",
+      "Bash(npm -v)",
+      "Bash(gcc --version)",
+      "Bash(rm -rf node_modules/better-sqlite3)",
+      "Bash(npm install *)"
+    ]
+  },
+  "enabledPlugins": {}
+}
