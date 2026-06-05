@@ -101,4 +101,18 @@ process.on('unhandledRejection', (reason) => {
 server.listen(PORT, () => {
   logger.info(`Server running at http://localhost:${PORT}`);
   botService.refreshAutoSchedule();
+
+  // Keep-alive: ping self every 10 min so Render free tier doesn't sleep
+  if (process.env.NODE_ENV === 'production' && process.env.RENDER_EXTERNAL_URL) {
+    const https = require('https');
+    const pingUrl = `${process.env.RENDER_EXTERNAL_URL}/health`;
+    setInterval(() => {
+      https.get(pingUrl, (res) => {
+        logger.info(`[KEEPALIVE] ping ${res.statusCode}`);
+      }).on('error', (err) => {
+        logger.warn(`[KEEPALIVE] ping failed: ${err.message}`);
+      });
+    }, 10 * 60 * 1000);
+    logger.info(`[KEEPALIVE] Self-ping каждые 10 мин → ${pingUrl}`);
+  }
 });
