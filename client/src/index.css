@@ -1016,6 +1016,23 @@ body {
   border-color: var(--yellow);
 }
 
+.btn-hide-all {
+  background: rgba(139, 92, 246, 0.07);
+  border-color: rgba(139, 92, 246, 0.25);
+  color: #a78bfa;
+  font-size: 13px;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.btn-hide-all:hover {
+  background: rgba(139, 92, 246, 0.15);
+  border-color: #a78bfa;
+}
+
 /* History & Analytics modals */
 .modal-wide {
   max-width: 720px;

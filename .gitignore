@@ -5,3 +5,11 @@ node_modules
 dist
 .env
 *.log
+node_modules/
+client/node_modules/
+client/dist/
+.env
+server/logs/
+server/data.db
+server/data.db-shm
+server/data.db-wal

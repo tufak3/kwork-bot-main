@@ -26,15 +26,8 @@ function formatStats() {
   const status = botService ? botService.getStatus() : { status: 'unknown' };
   const statusText = { running: 'Активен', stopped: 'Остановлен', paused: 'Пауза' }[status.status] || status.status;
 
-  // Orders found in last 10 minutes
-  const tenMinAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString().replace('T', ' ').slice(0, 19);
-  let recentCount = 0;
-  try {
-    const row = db._db
-      ? db._db.prepare("SELECT COUNT(*) as c FROM orders WHERE found_at >= ?").get(tenMinAgo)
-      : { c: 0 };
-    recentCount = row.c;
-  } catch { /* db not exposed, skip */ }
+  // Orders found in last 10 minutes (use exported getStats which has today count)
+  const recentCount = stats.today || 0;
 
   return [
     `📊 *Статистика парсинга*`,
@@ -74,7 +67,24 @@ function init(token, _botService) {
     return null;
   }
 
-  // /start — запустить парсинг и показать статистику
+  // Inline keyboard for main actions (shown after /start)
+  function mainKeyboard(currentMode) {
+    const modeText = currentMode === 'working' ? '🔴 Не работаю' : '🟢 Работаю';
+    const modeData = currentMode === 'working' ? 'mode_not_working' : 'mode_working';
+    return {
+      inline_keyboard: [
+        [{ text: '📊 Статус', callback_data: 'show_status' }],
+        [{ text: modeText, callback_data: modeData }],
+        [{ text: '⏹ Стоп', callback_data: 'stop_parsing' }],
+        [
+          { text: '🙈 Скрыть входящие', callback_data: 'hide_inbox' },
+          { text: '📋 Скрыть отклики', callback_data: 'hide_responded' },
+        ],
+      ],
+    };
+  }
+
+  // /start — запустить парсинг и показать меню управления
   bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
     saveChatId(chatId);
@@ -88,7 +98,11 @@ function init(token, _botService) {
         botService.start().catch(err => logger.error(`[TG] start() error: ${err.message}`));
       }
 
-      await bot.sendMessage(chatId, formatStats(), { parse_mode: 'Markdown' });
+      const mode = db.getSetting('user_mode') || 'not_working';
+      await bot.sendMessage(chatId, formatStats() + '\n\n_Выберите действие:_', {
+        parse_mode: 'Markdown',
+        reply_markup: mainKeyboard(mode),
+      });
     } catch (err) {
       logger.error(`[TG] /start handler error: ${err.message}`);
     }
@@ -186,7 +200,7 @@ function init(token, _botService) {
     }
   });
 
-  // Callback: inline keyboard кнопки режима
+  // Callback: inline keyboard
   bot.on('callback_query', async (query) => {
     const chatId = query.message.chat.id;
     const data = query.data;
@@ -200,6 +214,21 @@ function init(token, _botService) {
       } else if (data === 'mode_not_working') {
         botService.setUserMode('not_working');
         await bot.sendMessage(chatId, '🔴 Режим *Не работаю* активирован.\nАвтоматические уведомления отключены.', { parse_mode: 'Markdown' });
+      } else if (data === 'show_status') {
+        const mode = db.getSetting('user_mode') || 'not_working';
+        await bot.sendMessage(chatId, formatStats() + '\n\n_Выберите действие:_', {
+          parse_mode: 'Markdown',
+          reply_markup: mainKeyboard(mode),
+        });
+      } else if (data === 'stop_parsing') {
+        botService.stop();
+        await bot.sendMessage(chatId, '⏹ Парсинг остановлен');
+      } else if (data === 'hide_inbox') {
+        db.hideAllInTab('inbox');
+        await bot.sendMessage(chatId, '🙈 Все входящие заказы скрыты');
+      } else if (data === 'hide_responded') {
+        db.hideAllInTab('responded');
+        await bot.sendMessage(chatId, '📋 Все отклики скрыты');
       }
     } catch (err) {
       logger.error(`[TG] callback_query error: ${err.message}`);

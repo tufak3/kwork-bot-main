@@ -102,9 +102,16 @@ async function runOnce() {
 
     if (isBlocked()) {
       const seconds = Math.ceil((getBlockedUntil() - Date.now()) / 1000);
-      logger.warn(`[BOT] Kwork блокировка активна, прерываю прогон. Подождите ${seconds}с.`);
-      emit('parser_blocked', { seconds });
-      break;
+      if (seconds > 120) {
+        // Block is too long — stop and let auto-mode schedule retry
+        logger.warn(`[BOT] Kwork блокировка на ${seconds}с — остановка, перезапуск позже`);
+        emit('parser_blocked', { seconds });
+        break;
+      }
+      // Short block — wait it out and continue
+      logger.warn(`[BOT] Kwork блокировка на ${seconds}с — жду и продолжаю...`);
+      emit('parser_blocked', { seconds, waiting: true });
+      await sleep(seconds * 1000 + 2000);
     }
 
     try {

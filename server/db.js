@@ -353,12 +353,28 @@ function clearOrders() {
 }
 
 function clearRespondedOrders() {
-  // Delete AI responses for all responded orders, then mark them ignored
   db.prepare(`
     UPDATE orders SET ignored = 1
     WHERE id IN (SELECT order_id FROM ai_responses)
   `).run();
   db.prepare('DELETE FROM ai_responses').run();
+}
+
+function hideAllInTab(tab) {
+  if (tab === 'inbox') {
+    db.prepare(`
+      UPDATE orders SET ignored = 1
+      WHERE id NOT IN (SELECT order_id FROM ai_responses) AND ignored = 0
+    `).run();
+  } else if (tab === 'responded') {
+    db.prepare(`
+      UPDATE orders SET ignored = 1
+      WHERE id IN (SELECT order_id FROM ai_responses)
+    `).run();
+    db.prepare('DELETE FROM ai_responses').run();
+  } else if (tab === 'hidden') {
+    // Already hidden — nothing to do
+  }
 }
 
 // AI response cache (persistent — saves API cost on restart / re-view)
@@ -518,4 +534,5 @@ module.exports = {
   getGroqKeys,
   setGroqKeys,
   clearRespondedOrders,
+  hideAllInTab,
 };

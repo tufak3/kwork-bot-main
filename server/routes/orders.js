@@ -64,9 +64,15 @@ router.post('/clear', (req, res) => {
   res.json({ ok: true });
 });
 
-// Clear only responded orders: delete their AI responses and mark ignored
 router.post('/clear-responded', (req, res) => {
   db.clearRespondedOrders();
+  res.json({ ok: true });
+});
+
+router.post('/hide-all', (req, res) => {
+  const { tab } = req.body;
+  if (!tab) return res.status(400).json({ error: 'tab is required' });
+  db.hideAllInTab(tab);
   res.json({ ok: true });
 });
 
