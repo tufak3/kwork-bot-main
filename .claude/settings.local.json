@@ -12,7 +12,13 @@
       "Bash(npm -v)",
       "Bash(gcc --version)",
       "Bash(rm -rf node_modules/better-sqlite3)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(ls node_modules/openai)",
+      "Bash(node -e \"console.log\\('openai', require\\('./node_modules/openai/package.json'\\).version\\)\")",
+      "Bash(node -e \"require\\('./server/services/ai.js'\\); console.log\\('ai.js OK'\\)\")",
+      "Bash(node --check server/db.js)",
+      "Bash(node --check server/routes/settings.js)",
+      "Bash(npm run *)"
     ]
   },
   "enabledPlugins": {}

@@ -2,7 +2,6 @@ services:
   - type: web
     name: kwork-monitor
     env: node
-    region: frankfurt
     plan: free
     buildCommand: npm run render-build
     startCommand: npm start

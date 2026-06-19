@@ -14,12 +14,26 @@ const CLAUDE_MODELS = [
   { value: 'claude-haiku-4-5', label: 'Claude Haiku 4.5 (быстрый и дешёвый)' },
 ];
 
+const OPENAI_MODELS = [
+  { value: 'gpt-4o', label: 'GPT-4o (рекомендуется — баланс качества и цены)' },
+  { value: 'gpt-4o-mini', label: 'GPT-4o mini (быстрый и дешёвый)' },
+  { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+  { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo (самый дешёвый)' },
+];
+
+const DEFAULT_MODEL_BY_PROVIDER = {
+  groq: 'openai/gpt-oss-120b',
+  claude: 'claude-opus-4-8',
+  openai: 'gpt-4o',
+};
+
 export default function SettingsModal({ open, onClose, onToast }) {
   const [form, setForm] = useState({
     queries: '',
     exclude: '',
     prompt: '',
     claudeApiKey: '',
+    openaiApiKey: '',
     aiProvider: 'groq',
     model: 'openai/gpt-oss-120b',
     autoMode: false,
@@ -29,6 +43,8 @@ export default function SettingsModal({ open, onClose, onToast }) {
   });
   const [hasClaudeKey, setHasClaudeKey] = useState(false);
   const [maskedClaudeKey, setMaskedClaudeKey] = useState('');
+  const [hasOpenaiKey, setHasOpenaiKey] = useState(false);
+  const [maskedOpenaiKey, setMaskedOpenaiKey] = useState('');
   const [hasTgToken, setHasTgToken] = useState(false);
   const [groqKeys, setGroqKeys] = useState([]);
   const [newGroqKey, setNewGroqKey] = useState('');
@@ -45,8 +61,9 @@ export default function SettingsModal({ open, onClose, onToast }) {
         exclude: (s.exclude_keywords || '').split(',').filter(Boolean).join('\n'),
         prompt: s.ai_prompt || '',
         claudeApiKey: '',
+        openaiApiKey: '',
         aiProvider: provider,
-        model: s.ai_model || (provider === 'claude' ? 'claude-opus-4-8' : 'openai/gpt-oss-120b'),
+        model: s.ai_model || DEFAULT_MODEL_BY_PROVIDER[provider] || 'openai/gpt-oss-120b',
         autoMode: s.auto_mode === '1',
         autoInterval: parseInt(s.auto_interval_minutes || '15', 10),
         minRelevance: parseInt(s.min_relevance || '0', 10),
@@ -54,6 +71,8 @@ export default function SettingsModal({ open, onClose, onToast }) {
       });
       setHasClaudeKey(!!s.claude_api_key_present);
       setMaskedClaudeKey(s.claude_api_key_masked || '');
+      setHasOpenaiKey(!!s.openai_api_key_present);
+      setMaskedOpenaiKey(s.openai_api_key_masked || '');
       setHasTgToken(!!s.telegram_bot_token_present);
       setGroqKeys(keysData.keys || []);
       setDirty(false);
@@ -66,12 +85,16 @@ export default function SettingsModal({ open, onClose, onToast }) {
   };
 
   const handleProviderChange = (provider) => {
-    const defaultModel = provider === 'claude' ? 'claude-opus-4-8' : 'openai/gpt-oss-120b';
+    const defaultModel = DEFAULT_MODEL_BY_PROVIDER[provider] || 'openai/gpt-oss-120b';
     setForm(prev => ({ ...prev, aiProvider: provider, model: defaultModel }));
     setDirty(true);
   };
 
-  const currentModels = form.aiProvider === 'claude' ? CLAUDE_MODELS : GROQ_MODELS;
+  const currentModels = form.aiProvider === 'claude'
+    ? CLAUDE_MODELS
+    : form.aiProvider === 'openai'
+      ? OPENAI_MODELS
+      : GROQ_MODELS;
 
   const handleAddGroqKey = async () => {
     const trimmed = newGroqKey.trim();
@@ -116,6 +139,9 @@ export default function SettingsModal({ open, onClose, onToast }) {
     if (form.claudeApiKey.trim()) {
       updates.push({ key: 'claude_api_key', value: form.claudeApiKey.trim() });
     }
+    if (form.openaiApiKey.trim()) {
+      updates.push({ key: 'openai_api_key', value: form.openaiApiKey.trim() });
+    }
     if (form.telegramToken.trim()) {
       updates.push({ key: 'telegram_bot_token', value: form.telegramToken.trim() });
     }
@@ -123,7 +149,7 @@ export default function SettingsModal({ open, onClose, onToast }) {
       await updateSettingsBulk(updates);
       onToast?.('Настройки сохранены', 'info');
       setDirty(false);
-      setForm(prev => ({ ...prev, claudeApiKey: '', telegramToken: '' }));
+      setForm(prev => ({ ...prev, claudeApiKey: '', openaiApiKey: '', telegramToken: '' }));
     } catch (e) {
       onToast?.(e.message || 'Не удалось сохранить', 'error');
     }
@@ -145,7 +171,7 @@ export default function SettingsModal({ open, onClose, onToast }) {
           <div className="settings-section">
             <label>AI-провайдер</label>
             <div style={{ display: 'flex', gap: 12, marginTop: 4 }}>
-              {[{ value: 'groq', label: 'Groq' }, { value: 'claude', label: 'Claude (Anthropic)' }].map(p => (
+              {[{ value: 'groq', label: 'Groq' }, { value: 'claude', label: 'Claude (Anthropic)' }, { value: 'openai', label: 'OpenAI' }].map(p => (
                 <label key={p.value} style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
                   <input type="radio" name="aiProvider" value={p.value} checked={form.aiProvider === p.value} onChange={() => handleProviderChange(p.value)} />
                   {p.label}
@@ -159,7 +185,11 @@ export default function SettingsModal({ open, onClose, onToast }) {
             <label>
               AI-модель{' '}
               <span className="hint">
-                {form.aiProvider === 'claude' ? '(Claude Opus 4.8 — лучшее качество)' : '(GPT-OSS 120B — лучше всего справляется с задачей)'}
+                {form.aiProvider === 'claude'
+                  ? '(Claude Opus 4.8 — лучшее качество)'
+                  : form.aiProvider === 'openai'
+                    ? '(GPT-4o — баланс качества и цены)'
+                    : '(GPT-OSS 120B — лучше всего справляется с задачей)'}
               </span>
             </label>
             <select className="settings-select" value={form.model} onChange={(e) => update('model', e.target.value)}>
@@ -276,6 +306,16 @@ export default function SettingsModal({ open, onClose, onToast }) {
             <label>Claude API Key {hasClaudeKey && <span className="hint">(текущий: {maskedClaudeKey})</span>}</label>
             <input type="password" value={form.claudeApiKey} onChange={(e) => update('claudeApiKey', e.target.value)}
               placeholder={hasClaudeKey ? 'Оставьте пустым чтобы не менять' : 'Введите ключ (sk-ant-...)'} />
+          </div>
+
+          {/* OpenAI key */}
+          <div className="settings-section">
+            <label>OpenAI API Key {hasOpenaiKey && <span className="hint">(текущий: {maskedOpenaiKey})</span>}</label>
+            <input type="password" value={form.openaiApiKey} onChange={(e) => update('openaiApiKey', e.target.value)}
+              placeholder={hasOpenaiKey ? 'Оставьте пустым чтобы не менять' : 'Введите ключ (sk-...)'} />
+            <div className="hint" style={{ marginTop: 4 }}>
+              Получить на platform.openai.com/api-keys. Выберите провайдер «OpenAI» выше, чтобы использовать.
+            </div>
           </div>
 
           {/* Telegram token */}
