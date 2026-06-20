@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { fetchOrders, fetchTabCounts, getStatus, clearRespondedOrders, hideAllOrders, getUserMode } from '../api';
 import { useSocket } from '../hooks/useSocket';
 import OrderCard from './OrderCard';
+import ManualGenerate from './ManualGenerate';
 import BotControls from './BotControls';
 import SettingsModal from './SettingsModal';
 import HistoryModal from './HistoryModal';
@@ -12,6 +13,7 @@ const TABS = [
   { id: 'inbox', label: 'Входящие' },
   { id: 'responded', label: 'Мои отклики' },
   { id: 'hidden', label: 'Скрытые' },
+  { id: 'manual', label: 'По ссылке' },
 ];
 
 export default function Dashboard() {
@@ -167,6 +169,7 @@ export default function Dashboard() {
       } else if (e.key === '1') setTab('inbox');
       else if (e.key === '2') setTab('responded');
       else if (e.key === '3') setTab('hidden');
+      else if (e.key === '4') setTab('manual');
     }
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -235,11 +238,15 @@ export default function Dashboard() {
             onClick={() => setTab(t.id)}
           >
             {t.label}
-            <span className="tab-count">{counts[t.id] || 0}</span>
+            {t.id !== 'manual' && <span className="tab-count">{counts[t.id] || 0}</span>}
           </button>
         ))}
       </div>
 
+      {tab === 'manual' ? (
+        <ManualGenerate onToast={pushToast} />
+      ) : (
+        <>
       <div className="filter-bar">
         <input
           id="orders-search"
@@ -304,6 +311,8 @@ export default function Dashboard() {
             />
           ))}
         </div>
+      )}
+        </>
       )}
 
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} onToast={pushToast} />

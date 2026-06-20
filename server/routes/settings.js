@@ -26,15 +26,6 @@ router.get('/', (req, res) => {
   }
   delete settings.claude_api_key;
 
-  if (settings.openai_api_key) {
-    const key = settings.openai_api_key;
-    settings.openai_api_key_masked = key.length > 8 ? key.slice(0, 4) + '...' + key.slice(-4) : '****';
-    settings.openai_api_key_present = true;
-  } else {
-    settings.openai_api_key_present = false;
-  }
-  delete settings.openai_api_key;
-
   // Groq multi-keys: return count + masked list, never raw keys
   const groqKeys = db.getGroqKeys();
   settings.groq_keys_count = groqKeys.length;

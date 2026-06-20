@@ -18,7 +18,15 @@
       "Bash(node -e \"require\\('./server/services/ai.js'\\); console.log\\('ai.js OK'\\)\")",
       "Bash(node --check server/db.js)",
       "Bash(node --check server/routes/settings.js)",
-      "Bash(npm run *)"
+      "Bash(npm run *)",
+      "Bash(node --check server/services/parser.js)",
+      "Bash(node --check server/services/ai.js)",
+      "Bash(node --check server/routes/orders.js)",
+      "Bash(npx vite *)",
+      "Read(//tmp/**)",
+      "Bash(node --check server/services/robots.js)",
+      "Bash(node --check server/services/bot.js)",
+      "Bash(node *)"
     ]
   },
   "enabledPlugins": {}

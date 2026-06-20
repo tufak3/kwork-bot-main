@@ -1277,3 +1277,53 @@ body {
     width: 100%;
   }
 }
+
+/* --- Manual "paste a link" tab --- */
+.manual-generate {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.manual-form {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.manual-input {
+  flex: 1;
+  min-width: 240px;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  color: var(--text);
+  font-family: inherit;
+  font-size: 14px;
+  transition: border-color 0.15s;
+}
+
+.manual-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.manual-hint {
+  margin: 10px 2px 0;
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+.manual-error {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--red-bg);
+  border: 1px solid var(--red);
+  border-radius: var(--radius-sm);
+  color: var(--red);
+  font-size: 14px;
+}
+
+.manual-card {
+  margin-top: 18px;
+}

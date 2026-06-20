@@ -1,6 +1,7 @@
 const { Router } = require('express');
 const db = require('../db');
 const { generateResponse } = require('../services/ai');
+const { getOrderByUrl } = require('../services/parser');
 
 const router = Router();
 
@@ -57,6 +58,38 @@ router.post('/:id/generate', async (req, res) => {
 router.delete('/:id/ai', (req, res) => {
   db.deleteAiResponse(req.params.id);
   res.json({ ok: true });
+});
+
+// Manual "paste a link" flow: fetch the order page ourselves, then generate
+// an AI отклик without persisting it to the orders DB.
+router.post('/from-url', async (req, res) => {
+  const url = (req.body?.url || '').trim();
+  if (!url) {
+    return res.status(400).json({ error: 'Укажите ссылку на заказ' });
+  }
+
+  let order;
+  try {
+    order = await getOrderByUrl(url);
+  } catch (err) {
+    return res.status(502).json({ error: err.message || 'Не удалось загрузить страницу заказа' });
+  }
+
+  const result = await generateResponse(order, { force: true, persist: false });
+  if (result.error) {
+    return res.status(500).json({ error: result.error });
+  }
+
+  res.json({
+    order: {
+      id: order.id,
+      title: order.title,
+      description: order.description,
+      budget: order.budget,
+      url: order.url,
+    },
+    response: result.response,
+  });
 });
 
 router.post('/clear', (req, res) => {

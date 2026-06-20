@@ -227,7 +227,10 @@ function scheduleAutoRun() {
   const autoMode = db.getSetting('auto_mode') === '1';
   if (!autoMode) return;
 
-  const minutes = Math.max(1, parseInt(db.getSetting('auto_interval_minutes') || '15', 10));
+  // Enforce a polite minimum interval — frequent polling looks aggressive to
+  // Kwork and invites 403s. Users can set longer, but not shorter than this.
+  const MIN_INTERVAL_MINUTES = 5;
+  const minutes = Math.max(MIN_INTERVAL_MINUTES, parseInt(db.getSetting('auto_interval_minutes') || '15', 10));
   const ms = minutes * 60 * 1000;
   emit('auto_scheduled', { nextRunAt: Date.now() + ms, intervalMinutes: minutes });
 

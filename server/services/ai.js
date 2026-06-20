@@ -1,6 +1,5 @@
 const Groq = require('groq-sdk');
 const Anthropic = require('@anthropic-ai/sdk');
-const OpenAI = require('openai');
 const db = require('../db');
 const logger = require('../logger');
 const keyManager = require('./groqKeyManager');
@@ -16,12 +15,6 @@ function createClaudeClient() {
   const apiKey = db.getSetting('claude_api_key');
   if (!apiKey) return null;
   return new Anthropic({ apiKey });
-}
-
-function createOpenAIClient() {
-  const apiKey = db.getSetting('openai_api_key');
-  if (!apiKey) return null;
-  return new OpenAI({ apiKey });
 }
 
 function extractInstructions(description) {
@@ -191,49 +184,15 @@ async function generateClaude(order, prompt, model) {
   }
 }
 
-// --- OpenAI helpers ---
-
-async function generateOpenAI(order, prompt, model) {
-  const client = createOpenAIClient();
-  if (!client) return { error: 'OpenAI API ключ не задан в настройках' };
-
-  const userMsg = buildUserMessage(order);
-
-  try {
-    const completion = await client.chat.completions.create({
-      model,
-      max_tokens: 2048,
-      temperature: 0.75,
-      top_p: 0.9,
-      messages: [
-        { role: 'system', content: prompt },
-        { role: 'user', content: userMsg },
-      ],
-    });
-
-    const choice = completion.choices[0];
-    const text = choice?.message?.content?.trim() || '';
-
-    if (!text) {
-      return { error: `OpenAI: модель вернула пустой ответ (finish_reason: ${choice?.finish_reason || 'unknown'}).` };
-    }
-
-    return { text };
-  } catch (err) {
-    logger.error(`[AI/OpenAI] Ошибка: ${err.message}`);
-    return { error: err.message || 'Ошибка OpenAI API' };
-  }
-}
-
 // --- Main entry point ---
 
-async function generateResponse(order, { force = false } = {}) {
-  if (!force && hotCache.has(order.id)) {
+async function generateResponse(order, { force = false, persist = true } = {}) {
+  if (persist && !force && hotCache.has(order.id)) {
     db.incrementCacheHits();
     return { response: hotCache.get(order.id), cached: true };
   }
 
-  if (!force) {
+  if (persist && !force) {
     const saved = db.getAiResponse(order.id);
     if (saved && saved.response) {
       if (hotCache.size >= HOT_CACHE_MAX) hotCache.delete(hotCache.keys().next().value);
@@ -251,18 +210,18 @@ async function generateResponse(order, { force = false } = {}) {
     let result;
     if (provider === 'claude') {
       result = await generateClaude(order, prompt, model);
-    } else if (provider === 'openai') {
-      result = await generateOpenAI(order, prompt, model);
     } else {
       result = await generateGroq(order, prompt, model);
     }
 
     if (result.error) return { error: result.error };
 
-    db.saveAiResponse(order.id, result.text, model);
-    if (hotCache.size >= HOT_CACHE_MAX) hotCache.delete(hotCache.keys().next().value);
-    hotCache.set(order.id, result.text);
-    db.incrementAiGenerations();
+    if (persist) {
+      db.saveAiResponse(order.id, result.text, model);
+      if (hotCache.size >= HOT_CACHE_MAX) hotCache.delete(hotCache.keys().next().value);
+      hotCache.set(order.id, result.text);
+      db.incrementAiGenerations();
+    }
 
     return { response: result.text, cached: false };
   } catch (err) {

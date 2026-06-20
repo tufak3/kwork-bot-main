@@ -45,6 +45,8 @@ export const deleteAiResponse = (id) => request(`/orders/${id}/ai`, { method: 'D
 export const clearOrders = () => request('/orders/clear', { method: 'POST' });
 export const clearRespondedOrders = () => request('/orders/clear-responded', { method: 'POST' });
 export const hideAllOrders = (tab) => request('/orders/hide-all', { method: 'POST', body: JSON.stringify({ tab }) });
+export const generateFromUrl = (url) =>
+  request('/orders/from-url', { method: 'POST', body: JSON.stringify({ url }) });
 
 // Settings
 export const getSettings = () => request('/settings');

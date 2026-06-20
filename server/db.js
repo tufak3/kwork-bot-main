@@ -208,7 +208,6 @@ function seedDefaults(apiKey, claudeApiKey) {
     insert.run('groq_api_key', apiKey || '');
     insert.run('groq_api_keys', apiKey ? JSON.stringify([apiKey]) : '[]');
     insert.run('claude_api_key', claudeApiKey || '');
-    insert.run('openai_api_key', process.env.OPENAI_API_KEY || '');
     insert.run('ai_provider', 'groq');
     insert.run('ai_model', 'openai/gpt-oss-120b');
     insert.run('auto_mode', '0');
@@ -224,7 +223,6 @@ function seedDefaults(apiKey, claudeApiKey) {
     insertIfMissing.run('auto_interval_minutes', '15');
     insertIfMissing.run('min_relevance', '0');
     insertIfMissing.run('claude_api_key', '');
-    insertIfMissing.run('openai_api_key', process.env.OPENAI_API_KEY || '');
     insertIfMissing.run('ai_provider', 'groq');
     insertIfMissing.run('user_mode', 'not_working');
     insertIfMissing.run('telegram_chat_id', '');
